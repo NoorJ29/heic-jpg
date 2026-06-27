@@ -73,17 +73,9 @@ st.markdown("""
         padding: 0.6rem 1rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: #8b949e;
     }
     .history-item strong { color: #e6edf3; }
+    /* Hide GitHub link in the header, keep hamburger visible */
+    header a[href*="github"] { display: none !important; }
     footer { display: none !important; }
-    /* Hide Streamlit Cloud hosting chrome */
-    .st-emotion-cache-1aez2o7 { display: none !important; }
-    .stDeployButton { display: none !important; }
-    button[data-testid="stDeployButton"] { display: none !important; }
-    div[data-testid="stDeployButton"] { display: none !important; }
-    #root > .stApp + section { display: none !important; }
-    #root > .stApp + div { display: none !important; }
-    [data-testid="stToolbar"] { display: none !important; }
-    [data-testid="stToolbarActions"] { display: none !important; }
-    #stDecoration { display: none !important; }
     .download-btn {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: linear-gradient(135deg, #2ea043, #3fb950) !important;
