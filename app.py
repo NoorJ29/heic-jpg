@@ -83,10 +83,13 @@ st.markdown("""
         transition: all 0.2s !important; border: none !important;
     }
     .download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px #2ea04355; }
-    /* Hide GitHub icon & deploy/manage buttons, keep hamburger */
+    /* Hide GitHub icon in header toolbar */
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stToolbarActions"] { display: none !important; }
+    /* Hide "Manage app" floating button */
     .stDeployButton { display: none !important; }
+    button[data-testid="stDeployButton"] { display: none !important; }
+    /* Hide decoration */
     #stDecoration { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
