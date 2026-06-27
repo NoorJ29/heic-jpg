@@ -8,10 +8,12 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://noorj29:$HF_TOKEN@huggingface.co/spaces/noorj29/heic-jpg main
+        run: |
+          git remote add space https://noorj29:$HF_TOKEN@huggingface.co/spaces/noorj29/heic-jpg
+          git push --force space main 2>&1 || git push --force space master:main 2>&1
