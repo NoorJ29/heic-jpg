@@ -74,6 +74,8 @@ st.markdown("""
     }
     .history-item strong { color: #e6edf3; }
     footer { display: none !important; }
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
     #MainMenu { display: none !important; }
     .download-btn {
         display: inline-flex; align-items: center; gap: 0.4rem;
