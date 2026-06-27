@@ -75,6 +75,9 @@ st.markdown("""
         background: #161b22; border: 1px solid #30363d; border-radius: 8px;
         padding: 0.5rem 0.8rem; margin-bottom: 0.3rem; font-size: 0.82rem;
     }
+    header [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    .stDeployButton { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
