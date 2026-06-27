@@ -56,16 +56,8 @@ st.markdown("""
         text-align: center; margin-bottom: 0.2rem;
     }
     .subtitle { text-align: center; color: #8b949e; font-size: 0.9rem; margin-bottom: 0.5rem; }
-    .quality-badge { text-align: center; margin-bottom: 1rem; }
-    .quality-badge span {
-        display: inline-block; background: #161b22; border: 1px solid #30363d;
-        border-radius: 999px; padding: 0.15rem 0.8rem; font-size: 0.7rem; color: #8b949e;
-    }
-    .quality-badge strong { color: #58a6ff; }
-    .savings {
-        display: inline-block; background: #161b22; border: 1px solid #30363d;
-        border-radius: 999px; padding: 0.15rem 0.8rem; font-size: 0.7rem;
-    }
+
+
     .history-item {
         background: #161b22; border: 1px solid #30363d; border-radius: 8px;
         padding: 0.6rem 1rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: #8b949e;
@@ -78,6 +70,31 @@ st.markdown("""
     header [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
     .stDeployButton { display: none !important; }
+    section[data-testid="stSidebar"] .stButton button {
+        background: transparent !important; border: 1px solid #30363d !important;
+        font-size: 0.75rem !important; padding: 0.2rem 0.5rem !important;
+        border-radius: 6px !important; font-weight: 500 !important;
+    }
+    section[data-testid="stSidebar"] .stButton button:hover {
+        border-color: #58a6ff !important;
+    }
+    section[data-testid="stSidebar"] .stButton button[kind="primary"] {
+        background: linear-gradient(135deg, #1f6feb, #58a6ff) !important;
+        border: none !important;
+    }
+    .sidebar-header {
+        display: flex; align-items: center; gap: 0.5rem;
+        font-size: 0.95rem; font-weight: 700; color: #e6edf3;
+        padding: 0.25rem 0 0.75rem 0;
+    }
+    .quality-visual {
+        margin-top: 0.5rem; height: 4px; border-radius: 4px;
+        background: #30363d; overflow: hidden; position: relative;
+    }
+    .quality-visual-fill {
+        height: 100%; border-radius: 4px; transition: width 0.2s;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -87,19 +104,44 @@ st.markdown('<div class="subtitle">upload &middot; convert &middot; download &md
 
 # ── Sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Quality")
+    st.markdown('<div class="sidebar-header">⚙️ Settings</div>', unsafe_allow_html=True)
 
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("Lossless", use_container_width=True):
+            st.session_state.quality_target = 100
+    with c2:
+        if st.button("High", use_container_width=True):
+            st.session_state.quality_target = 95
+    with c3:
+        if st.button("Standard", use_container_width=True):
+            st.session_state.quality_target = 80
+
+    quality = st.session_state.get("quality_target", 100)
     quality = st.slider(
         "JPEG quality",
-        min_value=1, max_value=100, value=100,
+        min_value=1, max_value=100, value=quality,
         help="100 = highest quality. 95+ recommended.",
+        key="quality_slider",
     )
+    st.session_state.quality_target = quality
+
+    tier = "lossless" if quality == 100 else "high" if quality >= 95 else "standard" if quality >= 70 else "low"
+    tier_colors = {"lossless": "#3fb950", "high": "#58a6ff", "standard": "#d29922", "low": "#f85149"}
+    bar_color = tier_colors[tier]
+    bar_pct = quality
 
     st.markdown(
-        f'<div class="quality-badge"><span>Q<strong>{quality}</strong> '
-        f'{"lossless" if quality == 100 else "high" if quality >= 95 else "standard"}</span></div>',
+        f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">'
+        f'<span style="font-size:0.75rem;color:#8b949e">{quality}%</span>'
+        f'<span style="font-size:0.7rem;color:{bar_color};font-weight:600;text-transform:uppercase">{tier}</span>'
+        f'</div>'
+        f'<div class="quality-visual"><div class="quality-visual-fill" style="width:{bar_pct}%;background:linear-gradient(90deg,#1f6feb,{bar_color})"></div></div>',
         unsafe_allow_html=True,
     )
+
+    hint = "📦 Best quality, larger files" if quality >= 95 else "📦 Balanced size & quality" if quality >= 70 else "📦 Smaller files, quality loss"
+    st.caption(hint)
 
     st.markdown("---")
     st.markdown("### History")
@@ -120,7 +162,7 @@ with st.sidebar:
                 st.success(msg) if ok else st.warning(msg)
                 st.rerun()
         with col2:
-            if st.button("Clear History", use_container_width=True):
+            if st.button("Clear", use_container_width=True):
                 Path.home().joinpath(".heic_renamer_history.json").write_text("[]")
                 st.rerun()
     else:
