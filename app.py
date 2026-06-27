@@ -73,7 +73,17 @@ st.markdown("""
         padding: 0.6rem 1rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: #8b949e;
     }
     .history-item strong { color: #e6edf3; }
-    footer { display: none; }
+    footer { display: none !important; }
+    /* Hide Streamlit Cloud hosting chrome */
+    .st-emotion-cache-1aez2o7 { display: none !important; }
+    .stDeployButton { display: none !important; }
+    button[data-testid="stDeployButton"] { display: none !important; }
+    div[data-testid="stDeployButton"] { display: none !important; }
+    #root > .stApp + section { display: none !important; }
+    #root > .stApp + div { display: none !important; }
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stToolbarActions"] { display: none !important; }
+    #stDecoration { display: none !important; }
     .download-btn {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: linear-gradient(135deg, #2ea043, #3fb950) !important;
@@ -83,14 +93,6 @@ st.markdown("""
         transition: all 0.2s !important; border: none !important;
     }
     .download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px #2ea04355; }
-    /* Hide GitHub icon in header toolbar */
-    [data-testid="stToolbar"] { display: none !important; }
-    [data-testid="stToolbarActions"] { display: none !important; }
-    /* Hide "Manage app" floating button */
-    .stDeployButton { display: none !important; }
-    button[data-testid="stDeployButton"] { display: none !important; }
-    /* Hide decoration */
-    #stDecoration { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
