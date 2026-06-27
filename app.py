@@ -83,6 +83,10 @@ st.markdown("""
         transition: all 0.2s !important; border: none !important;
     }
     .download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px #2ea04355; }
+    /* Hide Streamlit toolbar & GitHub icon */
+    header[data-testid="stHeader"] { display: none !important; }
+    #stDecoration { display: none !important; }
+    .stApp > header { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
