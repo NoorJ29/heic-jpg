@@ -1,10 +1,11 @@
 """
- HEIC -> JPG  |  Streamlit Upload & Convert  |  v5.0
+ HEIC -> JPG  |  Streamlit Upload & Convert  |  v6.0
 """
 
 import os
 import io
 import tempfile
+import zipfile
 from pathlib import Path
 
 from heic_engine import convert_file, check_heif_support, load_history, undo_last
@@ -61,32 +62,19 @@ st.markdown("""
         border-radius: 999px; padding: 0.15rem 0.8rem; font-size: 0.7rem; color: #8b949e;
     }
     .quality-badge strong { color: #58a6ff; }
-    .stat-card {
-        background: #161b22; border: 1px solid #30363d; border-radius: 10px;
-        padding: 1rem; text-align: center; transition: border-color 0.2s;
+    .savings {
+        display: inline-block; background: #161b22; border: 1px solid #30363d;
+        border-radius: 999px; padding: 0.15rem 0.8rem; font-size: 0.7rem;
     }
-    .stat-card:hover { border-color: #58a6ff; }
-    .stat-value { font-size: 1.8rem; font-weight: 700; color: #58a6ff; }
-    .stat-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; }
     .history-item {
         background: #161b22; border: 1px solid #30363d; border-radius: 8px;
         padding: 0.6rem 1rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: #8b949e;
     }
     .history-item strong { color: #e6edf3; }
-    footer { display: none !important; }
-    header [data-testid="stToolbar"] { display: none !important; }
-    [data-testid="stDecoration"] { display: none !important; }
-    [data-testid="stToolbar"] { display: none !important; }
-    .stDeployButton { display: none !important; }
-    .download-btn {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        background: linear-gradient(135deg, #2ea043, #3fb950) !important;
-        color: #fff !important; padding: 0.5rem 1.2rem !important;
-        border-radius: 8px !important; text-decoration: none !important;
-        font-weight: 600 !important; font-size: 0.85rem !important;
-        transition: all 0.2s !important; border: none !important;
+    .file-row {
+        background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+        padding: 0.5rem 0.8rem; margin-bottom: 0.3rem; font-size: 0.82rem;
     }
-    .download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px #2ea04355; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,7 +133,7 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
     st.markdown(
-        f'<div style="margin-bottom:0.5rem;color:#8b949e;font-size:0.85rem">'
+        f'<div style="margin:0.3rem 0;color:#8b949e;font-size:0.85rem">'
         f'<strong style="color:#58a6ff">{len(uploaded_files)}</strong> file(s) selected'
         f'</div>',
         unsafe_allow_html=True,
@@ -154,21 +142,23 @@ if uploaded_files:
     for f in uploaded_files:
         stem = Path(f.name).stem
         size_kb = len(f.getvalue()) / 1024
-        c1, c2, c3 = st.columns([4, 1, 4])
+        size_str = f"{size_kb:.1f} KB" if size_kb < 1024 else f"{size_kb / 1024:.1f} MB"
+        c1, c2, c3 = st.columns([3, 1, 3])
         with c1:
             st.markdown(f'<span style="color:#e6edf3;font-size:0.85rem">{f.name}</span>', unsafe_allow_html=True)
         with c2:
-            st.markdown('<span style="color:#8b949e">&rarr;</span>', unsafe_allow_html=True)
+            st.markdown(f'<span style="color:#8b949e;font-size:0.82rem">{size_str}</span>', unsafe_allow_html=True)
         with c3:
             st.markdown(f'<span style="color:#3fb950;font-size:0.85rem">{stem}.jpg</span>', unsafe_allow_html=True)
 
-    if st.button(" Convert All", type="primary", use_container_width=True):
+    if st.button("Convert All", type="primary", use_container_width=True):
         progress_bar = st.progress(0, text="Preparing...")
         status_text = st.empty()
         results = []
 
         for i, uploaded in enumerate(uploaded_files):
             stem = Path(uploaded.name).stem
+            orig_size = len(uploaded.getvalue())
             status_text.markdown(
                 f'<span style="color:#58a6ff">Converting</span> '
                 f'<span style="color:#8b949e">{uploaded.name}</span>',
@@ -176,7 +166,6 @@ if uploaded_files:
             )
             progress_bar.progress((i + 1) / len(uploaded_files))
 
-            # Save uploaded file to temp path
             with tempfile.NamedTemporaryFile(delete=False, suffix=".heic") as tmp:
                 tmp.write(uploaded.getvalue())
                 tmp_path = tmp.name
@@ -185,10 +174,14 @@ if uploaded_files:
             try:
                 conv_result = convert_file(Path(tmp_path), out_path, quality=quality)
                 jpg_bytes = out_path.read_bytes()
+                jpg_size = len(jpg_bytes)
+                pct = (1 - jpg_size / orig_size) * 100
                 results.append({
                     "name": f"{stem}.jpg",
                     "bytes": jpg_bytes,
-                    "size": len(jpg_bytes),
+                    "size": jpg_size,
+                    "original": orig_size,
+                    "savings": pct,
                 })
             except Exception as e:
                 st.error(f"{uploaded.name}: {e}")
@@ -203,32 +196,89 @@ if uploaded_files:
 # ── Download results ───────────────────────────────────────────────────────
 if "results" in st.session_state and st.session_state.results:
     results = st.session_state.results
+    total_orig = sum(r["original"] for r in results)
+    total_new = sum(r["size"] for r in results)
+    total_pct = (1 - total_new / total_orig) * 100
+
     st.markdown("---")
-    st.markdown("### Download Converted JPGs")
+    st.markdown("### Converted")
+
+    col_summary = st.columns(3)
+    with col_summary[0]:
+        st.markdown(
+            f'<div style="text-align:center;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:0.8rem">'
+            f'<div style="font-size:1.4rem;font-weight:700;color:#58a6ff">{len(results)}</div>'
+            f'<div style="font-size:0.7rem;color:#8b949e">FILES</div></div>',
+            unsafe_allow_html=True,
+        )
+    with col_summary[1]:
+        color = "#3fb950" if total_pct > 0 else "#8b949e"
+        label = f"{abs(total_pct):.1f}% smaller" if total_pct > 0 else "same size"
+        st.markdown(
+            f'<div style="text-align:center;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:0.8rem">'
+            f'<div style="font-size:1.4rem;font-weight:700;color:{color}">{label}</div>'
+            f'<div style="font-size:0.7rem;color:#8b949e">SIZE CHANGE</div></div>',
+            unsafe_allow_html=True,
+        )
+    with col_summary[2]:
+        st.markdown(
+            f'<div style="text-align:center;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:0.8rem">'
+            f'<div style="font-size:1.4rem;font-weight:700;color:#e6edf3">Q{quality}</div>'
+            f'<div style="font-size:0.7rem;color:#8b949e">QUALITY</div></div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div style="color:#8b949e;font-size:0.82rem;margin-bottom:0.5rem">'
+        f'<strong style="color:#e6edf3">Original:</strong> {total_orig / 1048576:.1f} MB &rarr; '
+        f'<strong style="color:#e6edf3">JPG:</strong> {total_new / 1048576:.1f} MB</div>',
+        unsafe_allow_html=True,
+    )
 
     for r in results:
         size_str = f"{r['size'] / 1024:.1f} KB" if r['size'] < 1048576 else f"{r['size'] / 1048576:.1f} MB"
-        st.download_button(
-            label=f" Download {r['name']}  ({size_str})",
-            data=r["bytes"],
-            file_name=r["name"],
-            mime="image/jpeg",
-            use_container_width=True,
+        orig_str = f"{r['original'] / 1024:.1f} KB" if r['original'] < 1048576 else f"{r['original'] / 1048576:.1f} MB"
+        savings_color = "#3fb950" if r["savings"] > 0 else "#f85149"
+        st.markdown(
+            f'<div class="file-row" style="display:flex;justify-content:space-between;align-items:center">'
+            f'<span style="color:#e6edf3">{r["name"]}</span>'
+            f'<span><span style="color:#8b949e">{orig_str}</span>'
+            f'<span style="color:#8b949e;margin:0 0.3rem">&rarr;</span>'
+            f'<span style="color:#e6edf3">{size_str}</span>'
+            f'<span style="color:{savings_color};margin-left:0.5rem">{r["savings"]:.1f}%</span></span>'
+            f'</div>',
+            unsafe_allow_html=True,
         )
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Build ZIP in memory
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for r in results:
+            zf.writestr(r["name"], r["bytes"])
+    zip_bytes = zip_buf.getvalue()
+
+    col_btns = st.columns([1, 1, 1])
+    with col_btns[0]:
+        st.download_button(
+            label=f"Download All ({len(results)} files)",
+            data=zip_bytes,
+            file_name="converted-images.zip",
+            mime="application/zip",
+            use_container_width=True,
+        )
+    with col_btns[1]:
         if st.button("Convert More", use_container_width=True):
             for key in ["results"]:
                 if key in st.session_state:
                     del st.session_state[key]
             st.rerun()
-    with col2:
-        st.markdown(
-            f'<div style="text-align:center;padding:0.5rem;color:#8b949e;font-size:0.85rem">'
-            f'{len(results)} file(s) converted @ Q{quality}</div>',
-            unsafe_allow_html=True,
-        )
 else:
     if not uploaded_files:
-        st.info("Drop HEIC/HEIF files above to convert them to JPG.")
+        st.markdown(
+            '<div style="text-align:center;padding:1.5rem;color:#484f58;font-size:0.9rem">'
+            'Drop HEIC/HEIF files above to convert them to JPG</div>',
+            unsafe_allow_html=True,
+        )
