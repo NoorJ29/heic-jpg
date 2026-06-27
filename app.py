@@ -77,6 +77,7 @@ st.markdown("""
     header [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
     [data-testid="stToolbar"] { display: none !important; }
+    .stDeployButton { display: none !important; }
     .download-btn {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: linear-gradient(135deg, #2ea043, #3fb950) !important;
