@@ -73,9 +73,10 @@ st.markdown("""
         padding: 0.6rem 1rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: #8b949e;
     }
     .history-item strong { color: #e6edf3; }
-    /* Hide GitHub link in the header, keep hamburger visible */
-    header a[href*="github"] { display: none !important; }
-    footer { display: none !important; }
+    footer { display: none; }
+    header [data-testid="stToolbar"] { display: none !important; }
+    #MainMenu { display: none !important; }
+    header [data-testid="stDecoration"] { display: none !important; }
     .download-btn {
         display: inline-flex; align-items: center; gap: 0.4rem;
         background: linear-gradient(135deg, #2ea043, #3fb950) !important;
