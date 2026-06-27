@@ -95,16 +95,17 @@ st.markdown("""
         height: 100%; border-radius: 4px; transition: width 0.2s;
     }
 
-    #sidebar-toggle-btn {
-        position: fixed; bottom: 1rem; left: 1rem; z-index: 999;
-        width: 36px; height: 36px; border-radius: 10px;
-        background: #161b22; border: 1px solid #30363d;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: all 0.2s; opacity: 0.6;
+    [data-testid="stSidebarCollapsedButton"] {
+        bottom: 1rem !important; top: auto !important; left: 1rem !important;
+        width: 36px !important; height: 36px !important; border-radius: 10px !important;
+        background: #161b22 !important; border: 1px solid #30363d !important;
+        opacity: 0.6 !important; transition: all 0.2s !important;
     }
-    #sidebar-toggle-btn:hover { opacity: 1; border-color: #58a6ff; background: #1c2333; }
-    #sidebar-toggle-btn svg { fill: #8b949e; width: 18px; height: 18px; }
-    #sidebar-toggle-btn:hover svg { fill: #58a6ff; }
+    [data-testid="stSidebarCollapsedButton"]:hover {
+        opacity: 1 !important; border-color: #58a6ff !important; background: #1c2333 !important;
+    }
+    [data-testid="stSidebarCollapsedButton"] svg { fill: #8b949e !important; }
+    [data-testid="stSidebarCollapsedButton"]:hover svg { fill: #58a6ff !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -177,16 +178,6 @@ with st.sidebar:
                 st.rerun()
     else:
         st.markdown('<div class="history-item" style="text-align:center">No sessions yet</div>', unsafe_allow_html=True)
-
-# ── Sidebar toggle ──────────────────────────────────────────────────────────
-st.markdown("""
-<div id="sidebar-toggle-btn" onclick="
-    var b = document.querySelector('[data-testid=\\"stSidebarCollapsedButton\\"]');
-    if (b) b.click();
-" title="Toggle sidebar">
-    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-</div>
-""", unsafe_allow_html=True)
 
 # ── Main: File upload ───────────────────────────────────────────────────────
 uploaded_files = st.file_uploader(
