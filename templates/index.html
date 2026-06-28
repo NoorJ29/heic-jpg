@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HEIC &rarr; JPG Converter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    body { background: #0b0e14; }
+    .dropzone { border: 2px dashed #30363d; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+    .dropzone:hover, .dropzone.dragover { border-color: #58a6ff; }
+    .glitch { font-size: 2.2rem; font-weight: 900; background: linear-gradient(135deg, #58a6ff, #bc8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 0.8rem; }
+    .file-row { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.5rem 0.8rem; margin-bottom: 0.3rem; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; }
+    .quality-bar { height: 4px; border-radius: 4px; background: #30363d; overflow: hidden; }
+    .quality-fill { height: 100%; border-radius: 4px; transition: width 0.2s; }
+    .preset-btn { border: 1px solid #30363d; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 500; background: transparent; color: #8b949e; cursor: pointer; transition: all 0.15s; }
+    .preset-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+    .preset-btn.active { background: #1f6feb33; border-color: #58a6ff; color: #58a6ff; }
+    .sidebar-btn { position: fixed; bottom: 1rem; left: 1rem; z-index: 999999; width: 44px; height: 44px; border-radius: 12px; background: #1f6feb; border: none; color: #fff; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px #1f6feb44; transition: all 0.2s; }
+    .sidebar-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px #1f6feb66; }
+    #sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: #0b0e14; border-right: 1px solid #30363d; z-index: 99999; padding: 1rem; overflow-y: auto; transform: translateX(-100%); transition: transform 0.25s ease; }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
+    #sidebar-overlay.show { display: block; }
+    .history-item { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.6rem 1rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: #8b949e; }
+    input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: #30363d; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #58a6ff; cursor: pointer; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0e14; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen text-[#e6edf3]">
+
+  <div id="sidebar-overlay"></div>
+
+  <div id="sidebar">
+    <div class="flex items-center justify-between mb-4">
+      <span class="font-bold text-sm">&#9881; Settings</span>
+      <button onclick="closeSidebar()" class="text-[#8b949e] hover:text-[#58a6ff] text-lg">&times;</button>
+    </div>
+
+    <div class="flex gap-1 mb-3">
+      <button class="preset-btn flex-1" data-quality="100" onclick="setQuality(100)">Lossless</button>
+      <button class="preset-btn flex-1" data-quality="95" onclick="setQuality(95)">High</button>
+      <button class="preset-btn flex-1" data-quality="80" onclick="setQuality(80)">Standard</button>
+    </div>
+
+    <label class="text-xs text-[#8b949e] block mb-1">JPEG quality</label>
+    <input type="range" id="quality-slider" min="1" max="100" value="100" oninput="updateQuality(this.value)" />
+
+    <div class="flex justify-between items-center mt-1 mb-1">
+      <span class="text-xs text-[#8b949e]" id="quality-label">100%</span>
+      <span class="text-xs font-semibold uppercase" id="quality-tier" style="color:#3fb950">lossless</span>
+    </div>
+    <div class="quality-bar mb-2">
+      <div class="quality-fill" id="quality-fill" style="width:100%;background:linear-gradient(90deg,#1f6feb,#3fb950)"></div>
+    </div>
+    <p class="text-xs text-[#8b949e] mb-4" id="quality-hint">&#128230; Best quality, larger files</p>
+
+    <hr class="border-[#30363d] mb-3" />
+
+    <div class="flex items-center gap-2 mb-3">
+      <span class="font-bold text-sm">History</span>
+    </div>
+    <div id="history-list"></div>
+
+    <div class="flex gap-2 mt-2" id="history-actions" style="display:none">
+      <button onclick="undoLast()" class="preset-btn flex-1">Undo Last</button>
+      <button onclick="clearHistory()" class="preset-btn flex-1">Clear</button>
+    </div>
+  </div>
+
+  <button class="sidebar-btn" id="sidebar-toggle" onclick="toggleSidebar()">&#9776;</button>
+
+  <main class="max-w-2xl mx-auto px-4 pt-12 pb-24">
+    <div class="glitch mb-1"># HEIC &rarr; JPG #</div>
+    <p class="text-center text-[#8b949e] text-sm mb-6">upload &middot; convert &middot; download &mdash; originals never leave your device</p>
+
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+      <p class="text-[#8b949e] text-sm">Drop your HEIC/HEIF files here</p>
+      <p class="text-[#484f58] text-xs mt-1">or click to browse</p>
+      <input type="file" id="file-input" accept=".heic,.HEIC,.heif,.HEIF" multiple class="hidden" onchange="handleFiles(this.files)" />
+    </div>
+
+    <div id="file-list" class="mt-3"></div>
+
+    <button id="convert-btn" class="w-full mt-3 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-[#1f6feb] to-[#58a6ff] text-white border-none cursor-pointer hover:shadow-lg hover:shadow-[#1f6feb55] transition-all disabled:opacity-50 disabled:cursor-not-allowed" onclick="convertFiles()" disabled>
+      Convert All
+    </button>
+
+    <div id="progress-area" class="mt-3 hidden">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xs text-[#58a6ff]" id="status-text">Preparing...</span>
+      </div>
+      <div class="quality-bar">
+        <div class="quality-fill" id="progress-fill" style="width:0%;background:linear-gradient(90deg,#1f6feb,#58a6ff)"></div>
+      </div>
+    </div>
+
+    <div id="results-area" class="mt-4 hidden"></div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
