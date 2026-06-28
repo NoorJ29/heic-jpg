@@ -17,7 +17,7 @@ st.set_page_config(
     page_title="HEIC -> JPG Converter",
     page_icon="#",
     layout="centered",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="auto",
 )
 
 if not check_heif_support()[0]:
@@ -104,11 +104,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Sidebar visibility toggle ─────────────────────────────────────────────
+# ── Toggle button positioning ──────────────────────────────────────────────
 st.markdown(f"""
 <style>
     [data-testid="stSidebarCollapsedButton"] {{ display: none !important; }}
-    section[data-testid="stSidebar"] {{ display: {"block" if sidebar_open else "none"} !important; }}
     div[data-testid="stMarkdownContainer"]:has(#sb-marker) + div[data-testid="stButton"] {{
         position: fixed !important;
         bottom: 1rem !important; left: 1rem !important;
@@ -144,76 +143,79 @@ if st.button(toggle_icon, key="sb_toggle"):
 st.markdown('<div class="glitch"># HEIC &rarr; JPG #</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">upload &middot; convert &middot; download &mdash; originals never leave your device</div>', unsafe_allow_html=True)
 
-# ── Sidebar ─────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown('<div class="sidebar-header">⚙️ Settings</div>', unsafe_allow_html=True)
+# ── Quality default (used in both sidebar and main) ─────────────────────────
+quality = st.session_state.get("quality_target", 100)
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button("Lossless", use_container_width=True):
-            st.session_state.quality_target = 100
-    with c2:
-        if st.button("High", use_container_width=True):
-            st.session_state.quality_target = 95
-    with c3:
-        if st.button("Standard", use_container_width=True):
-            st.session_state.quality_target = 80
+# ── Sidebar (conditionally rendered) ────────────────────────────────────────
+if sidebar_open:
+    with st.sidebar:
+        st.markdown('<div class="sidebar-header">⚙️ Settings</div>', unsafe_allow_html=True)
 
-    quality = st.session_state.get("quality_target", 100)
-    quality = st.slider(
-        "JPEG quality",
-        min_value=1, max_value=100, value=quality,
-        help="100 = highest quality. 95+ recommended.",
-        key="quality_slider",
-    )
-    st.session_state.quality_target = quality
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            if st.button("Lossless", use_container_width=True):
+                st.session_state.quality_target = 100
+        with c2:
+            if st.button("High", use_container_width=True):
+                st.session_state.quality_target = 95
+        with c3:
+            if st.button("Standard", use_container_width=True):
+                st.session_state.quality_target = 80
 
-    tier = "lossless" if quality == 100 else "high" if quality >= 95 else "standard" if quality >= 70 else "low"
-    tier_colors = {"lossless": "#3fb950", "high": "#58a6ff", "standard": "#d29922", "low": "#f85149"}
-    bar_color = tier_colors[tier]
-    bar_pct = quality
+        quality = st.slider(
+            "JPEG quality",
+            min_value=1, max_value=100, value=quality,
+            help="100 = highest quality. 95+ recommended.",
+            key="quality_slider",
+        )
+        st.session_state.quality_target = quality
 
-    st.markdown(
-        f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">'
-        f'<span style="font-size:0.75rem;color:#8b949e">{quality}%</span>'
-        f'<span style="font-size:0.7rem;color:{bar_color};font-weight:600;text-transform:uppercase">{tier}</span>'
-        f'</div>'
-        f'<div class="quality-visual"><div class="quality-visual-fill" style="width:{bar_pct}%;background:linear-gradient(90deg,#1f6feb,{bar_color})"></div></div>',
-        unsafe_allow_html=True,
-    )
+        tier = "lossless" if quality == 100 else "high" if quality >= 95 else "standard" if quality >= 70 else "low"
+        tier_colors = {"lossless": "#3fb950", "high": "#58a6ff", "standard": "#d29922", "low": "#f85149"}
+        bar_color = tier_colors[tier]
+        bar_pct = quality
 
-    hint = "📦 Best quality, larger files" if quality >= 95 else "📦 Balanced size & quality" if quality >= 70 else "📦 Smaller files, quality loss"
-    st.caption(hint)
+        st.markdown(
+            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">'
+            f'<span style="font-size:0.75rem;color:#8b949e">{quality}%</span>'
+            f'<span style="font-size:0.7rem;color:{bar_color};font-weight:600;text-transform:uppercase">{tier}</span>'
+            f'</div>'
+            f'<div class="quality-visual"><div class="quality-visual-fill" style="width:{bar_pct}%;background:linear-gradient(90deg,#1f6feb,{bar_color})"></div></div>',
+            unsafe_allow_html=True,
+        )
 
-    st.markdown("---")
-    st.markdown("### History")
+        hint = "📦 Best quality, larger files" if quality >= 95 else "📦 Balanced size & quality" if quality >= 70 else "📦 Smaller files, quality loss"
+        st.caption(hint)
 
-    history = load_history()
-    if history:
-        for h in reversed(history[-10:]):
-            ts = h.get("timestamp", "?")[:19].replace("T", " ")
-            convs = h.get("conversions", h.get("renames", []))
-            st.markdown(
-                f'<div class="history-item"><strong>{len(convs)} files</strong> &middot; Q{h.get("quality", "?")} &middot; {ts}</div>',
-                unsafe_allow_html=True,
-            )
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Undo Last", use_container_width=True):
-                ok, msg = undo_last()
-                st.success(msg) if ok else st.warning(msg)
-                st.rerun()
-        with col2:
-            if st.button("Clear", use_container_width=True):
-                Path.home().joinpath(".heic_renamer_history.json").write_text("[]")
-                st.rerun()
-    else:
-        st.markdown('<div class="history-item" style="text-align:center">No sessions yet</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("### History")
 
-    st.markdown("---")
-    if st.button("✕ Close", use_container_width=True):
-        st.session_state.sidebar_open = False
-        st.rerun()
+        history = load_history()
+        if history:
+            for h in reversed(history[-10:]):
+                ts = h.get("timestamp", "?")[:19].replace("T", " ")
+                convs = h.get("conversions", h.get("renames", []))
+                st.markdown(
+                    f'<div class="history-item"><strong>{len(convs)} files</strong> &middot; Q{h.get("quality", "?")} &middot; {ts}</div>',
+                    unsafe_allow_html=True,
+                )
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Undo Last", use_container_width=True):
+                    ok, msg = undo_last()
+                    st.success(msg) if ok else st.warning(msg)
+                    st.rerun()
+            with col2:
+                if st.button("Clear", use_container_width=True):
+                    Path.home().joinpath(".heic_renamer_history.json").write_text("[]")
+                    st.rerun()
+        else:
+            st.markdown('<div class="history-item" style="text-align:center">No sessions yet</div>', unsafe_allow_html=True)
+
+        st.markdown("---")
+        if st.button("✕ Close", use_container_width=True):
+            st.session_state.sidebar_open = False
+            st.rerun()
 
 # ── Main: File upload ───────────────────────────────────────────────────────
 uploaded_files = st.file_uploader(
