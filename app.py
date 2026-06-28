@@ -24,6 +24,13 @@ if not check_heif_support()[0]:
     st.error("pillow-heif not installed. Run: pip install pillow pillow-heif")
     st.stop()
 
+# ── Sidebar toggle state ────────────────────────────────────────────────────
+if "sidebar_open" not in st.session_state:
+    st.session_state.sidebar_open = False
+
+sidebar_open = st.session_state.sidebar_open
+toggle_icon = "✕" if sidebar_open else "☰"
+
 # ── Dark theme ───────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -94,23 +101,44 @@ st.markdown("""
     .quality-visual-fill {
         height: 100%; border-radius: 4px; transition: width 0.2s;
     }
-
-    [data-testid="stSidebarCollapsedButton"] {
-        position: fixed !important;
-        bottom: 1rem !important; top: auto !important; left: 1rem !important;
-        width: 40px !important; height: 40px !important; border-radius: 12px !important;
-        background: #1c2333 !important; border: 1.5px solid #30363d !important;
-        opacity: 0.85 !important; transition: all 0.2s !important;
-        z-index: 999999 !important;
-    }
-    [data-testid="stSidebarCollapsedButton"]:hover {
-        opacity: 1 !important; border-color: #58a6ff !important; background: #1f6feb33 !important;
-        transform: scale(1.05) !important;
-    }
-    [data-testid="stSidebarCollapsedButton"] svg { fill: #8b949e !important; }
-    [data-testid="stSidebarCollapsedButton"]:hover svg { fill: #58a6ff !important; }
 </style>
 """, unsafe_allow_html=True)
+
+# ── Sidebar visibility toggle ─────────────────────────────────────────────
+st.markdown(f"""
+<style>
+    [data-testid="stSidebarCollapsedButton"] {{ display: none !important; }}
+    section[data-testid="stSidebar"] {{ display: {"block" if sidebar_open else "none"} !important; }}
+    div[data-testid="stMarkdownContainer"]:has(#sb-marker) + div[data-testid="stButton"] {{
+        position: fixed !important;
+        bottom: 1rem !important; left: 1rem !important;
+        z-index: 999999 !important;
+    }}
+    div[data-testid="stMarkdownContainer"]:has(#sb-marker) + div[data-testid="stButton"] button {{
+        width: 44px !important; height: 44px !important;
+        border-radius: 12px !important;
+        background: #1f6feb !important;
+        border: none !important;
+        color: #fff !important;
+        font-size: 1.3rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        box-shadow: 0 4px 16px #1f6feb44 !important;
+        padding: 0 !important;
+    }}
+    div[data-testid="stMarkdownContainer"]:has(#sb-marker) + div[data-testid="stButton"] button:hover {{
+        transform: scale(1.08) !important;
+        box-shadow: 0 6px 24px #1f6feb66 !important;
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<div id="sb-marker" style="display:none"></div>', unsafe_allow_html=True)
+if st.button(toggle_icon, key="sb_toggle"):
+    st.session_state.sidebar_open = not sidebar_open
+    st.rerun()
 
 # ── Header ───────────────────────────────────────────────────────────────────
 st.markdown('<div class="glitch"># HEIC &rarr; JPG #</div>', unsafe_allow_html=True)
@@ -181,6 +209,11 @@ with st.sidebar:
                 st.rerun()
     else:
         st.markdown('<div class="history-item" style="text-align:center">No sessions yet</div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    if st.button("✕ Close", use_container_width=True):
+        st.session_state.sidebar_open = False
+        st.rerun()
 
 # ── Main: File upload ───────────────────────────────────────────────────────
 uploaded_files = st.file_uploader(
