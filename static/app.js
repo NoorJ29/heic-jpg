@@ -186,20 +186,22 @@ function showResults(data) {
 
   for (const r of results) {
     const sc = r.savings > 0 ? '#3fb950' : '#f85149';
+    const dlUrl = `/api/download/${sessionId}/${encodeURIComponent(r.name)}`;
     html += `<div class="file-row">
       <span class="text-[#e6edf3]">${r.name}</span>
-      <span>
-        <span class="text-[#8b949e]">${formatSize(r.original)}</span>
-        <span class="text-[#8b949e] mx-1">&rarr;</span>
-        <span class="text-[#e6edf3]">${formatSize(r.size)}</span>
-        <span class="ml-1" style="color:${sc}">${r.savings}%</span>
+      <span class="flex items-center gap-2">
+        <span class="text-[#8b949e] text-xs">${formatSize(r.original)}</span>
+        <span class="text-[#8b949e] text-xs">&rarr;</span>
+        <span class="text-[#e6edf3] text-xs">${formatSize(r.size)}</span>
+        <span class="text-xs font-semibold" style="color:${sc}">${r.savings}%</span>
+        <a href="${dlUrl}" download="${r.name}" class="text-xs px-2 py-0.5 rounded bg-[#1f6feb] text-white no-underline hover:bg-[#58a6ff] transition-colors">Download</a>
       </span>
     </div>`;
   }
 
   html += `
     <div class="flex gap-2 mt-3">
-      <a href="/api/download/${sessionId}/zip" class="flex-1 py-2 rounded-lg text-center text-sm font-semibold bg-gradient-to-r from-[#1f6feb] to-[#58a6ff] text-white no-underline">Download All (${total.files} files)</a>
+      <a href="/api/download/${sessionId}/zip" class="flex-1 py-2 rounded-lg text-center text-sm font-semibold bg-gradient-to-r from-[#1f6feb] to-[#58a6ff] text-white no-underline">Download All as ZIP</a>
       <button onclick="resetApp()" class="flex-1 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-[#1f6feb] to-[#58a6ff] text-white border-none cursor-pointer">Convert More</button>
     </div>
   `;
