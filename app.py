@@ -17,7 +17,7 @@ st.set_page_config(
     page_title="HEIC -> JPG Converter",
     page_icon="#",
     layout="centered",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 if not check_heif_support()[0]:
@@ -96,13 +96,16 @@ st.markdown("""
     }
 
     [data-testid="stSidebarCollapsedButton"] {
+        position: fixed !important;
         bottom: 1rem !important; top: auto !important; left: 1rem !important;
-        width: 36px !important; height: 36px !important; border-radius: 10px !important;
-        background: #161b22 !important; border: 1px solid #30363d !important;
-        opacity: 0.6 !important; transition: all 0.2s !important;
+        width: 40px !important; height: 40px !important; border-radius: 12px !important;
+        background: #1c2333 !important; border: 1.5px solid #30363d !important;
+        opacity: 0.85 !important; transition: all 0.2s !important;
+        z-index: 999999 !important;
     }
     [data-testid="stSidebarCollapsedButton"]:hover {
-        opacity: 1 !important; border-color: #58a6ff !important; background: #1c2333 !important;
+        opacity: 1 !important; border-color: #58a6ff !important; background: #1f6feb33 !important;
+        transform: scale(1.05) !important;
     }
     [data-testid="stSidebarCollapsedButton"] svg { fill: #8b949e !important; }
     [data-testid="stSidebarCollapsedButton"]:hover svg { fill: #58a6ff !important; }
